@@ -1,0 +1,34 @@
+{
+  "eslint.enable": true,
+  "eslint.validate": ["javascript", "typescript"],
+  "eslint.options": {
+    "overrideConfigFile": ".eslintrc.js"
+  },
+  "typescript.preferences.includePackageJsonAutoImports": "auto",
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+  "editor.formatOnSave": false,
+  "typescript.preferences.quoteStyle": "single",
+  "javascript.preferences.quoteStyle": "single",
+  "workbench.colorCustomizations": {
+    "activityBar.activeBackground": "#5a61c2",
+    "activityBar.background": "#5a61c2",
+    "activityBar.foreground": "#e7e7e7",
+    "activityBar.inactiveForeground": "#e7e7e799",
+    "activityBarBadge.background": "#d48b90",
+    "activityBarBadge.foreground": "#15202b",
+    "commandCenter.border": "#e7e7e799",
+    "sash.hoverBorder": "#5a61c2",
+    "statusBar.background": "#3f46aa",
+    "statusBar.foreground": "#e7e7e7",
+    "statusBarItem.hoverBackground": "#5a61c2",
+    "statusBarItem.remoteBackground": "#3f46aa",
+    "statusBarItem.remoteForeground": "#e7e7e7",
+    "titleBar.activeBackground": "#3f46aa",
+    "titleBar.activeForeground": "#e7e7e7",
+    "titleBar.inactiveBackground": "#3f46aa99",
+    "titleBar.inactiveForeground": "#e7e7e799"
+  },
+  "peacock.color": "#3f46aa"
+}

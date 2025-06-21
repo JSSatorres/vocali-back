@@ -1,0 +1,47 @@
+service: vocali
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: eu-west-1
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:PutItem
+        - dynamodb:GetItem
+      Resource: arn:aws:dynamodb:eu-west-1:838736784815:table/UserTable
+      # Resource: arn:aws:dynamodb:${self:provider.region}:*:table/UserTable
+
+
+build:
+  esbuild:
+    bundle: true
+    minify: true
+    target: node20
+    exclude:
+      - aws-sdk
+    external:
+      - "@aws-sdk/*"
+
+functions:
+  postUser:
+    handler: src/app/lambdaHandler/user/userPostHandler.userPostHandler
+    environment:
+      USER_TABLE_NAME: !Ref UserTable
+    events:
+      - httpApi:
+          path: /users
+          method: post
+resources:
+    Resources:
+      UserTable:
+        Type: AWS::DynamoDB::Table
+        Properties:
+          TableName: UserTable
+          AttributeDefinitions:
+            - AttributeName: userId
+              AttributeType: S
+          KeySchema:
+            - AttributeName: userId
+              KeyType: HASH
+          BillingMode: PAY_PER_REQUEST
