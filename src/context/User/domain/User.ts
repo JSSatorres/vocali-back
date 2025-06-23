@@ -2,7 +2,6 @@ import { AggregateRoot } from '../../Shared/domain/AggregateRoot'
 import { UserId } from './UserId'
 import { UserName } from './UserName'
 import { UserEmail } from './UserEmail'
-import { UserCreatedDomainEvent } from './UserCreatedDomainEvent'
 
 export class User extends AggregateRoot {
   readonly id: UserId
@@ -18,15 +17,6 @@ export class User extends AggregateRoot {
 
   static create (id: UserId, name: UserName, email: UserEmail): User {
     const user = new User(id, name, email)
-
-    user.record(
-      new UserCreatedDomainEvent({
-        aggregateId: user.id.value,
-        name: user.name.value,
-        email: user.email.value
-      })
-    )
-
     return user
   }
 

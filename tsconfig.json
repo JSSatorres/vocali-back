@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "es2020",
+    "target": "esnext",
     "module": "esnext",
     "moduleResolution": "node",
     "esModuleInterop": true,
@@ -9,15 +9,19 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "declaration": false,
-    "outDir": ".build",
-    "rootDir": "./",
+    "outDir": ".build", // o "dist" si prefieres
+    "rootDir": "./",    // o "src" si prefieres
     "sourceMap": true,
     "removeComments": true,
     "lib": ["es2020"],
     "types": ["node", "reflect-metadata"],
     "experimentalDecorators": true,
-    "emitDecoratorMetadata": true
+    "emitDecoratorMetadata": true,
+    "baseUrl": ".", // <-- Añade esto
+    "paths": {      // <-- Y esto
+      "@/*": ["src/*"]
+    }
   },
-  "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", ".build", ".serverless", "**/*.test.ts"]
+  "include": ["src/**/*.ts", "tests/**/*.ts"],
+  "exclude": ["node_modules", ".build", ".serverless"]
 }

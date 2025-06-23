@@ -1,8 +1,7 @@
 import '../../../context/Shared/infrastructure/bootstrap'
 import { container } from 'tsyringe'
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
-import { UserCreator } from '../../../context/User/application/UserCreator'
-import { withBodyValidation } from '../../shared/middleware/bodyValidationMiddleware'
+import { TranscriptionLister } from '../../../context/Transcription/application/TranscriptionLister'
 import { withErrorHandling } from '../../shared/middleware/errorHandlingMiddleware'
 import { withCorsHeaders } from '../../shared/middleware/corsMiddleware'
 import { compose } from '../../shared/middleware/compose'
@@ -11,31 +10,35 @@ import { initializeDIContainer } from '../../../context/Shared/infrastructure/DI
 // Initialize DI container once
 initializeDIContainer()
 
-const userPostHandlerCore = async (
+const transcriptionGetAllHandlerCore = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
-  const body = JSON.parse(event.body as string)
+  const status = event.queryStringParameters?.status
 
-  // Resolve UserCreator from the DI container
-  const userCreator = container.resolve(UserCreator)
-  await userCreator.run(body)
+  // Resolve TranscriptionLister from the DI container
+  const transcriptionLister = container.resolve(TranscriptionLister)
+
+  const transcriptions = status !== undefined
+    ? await transcriptionLister.runByStatus(status)
+    : await transcriptionLister.run()
 
   return {
-    statusCode: 201,
+    statusCode: 200,
     body: JSON.stringify({
-      message: 'User created successfully',
+      message: 'Transcriptions retrieved successfully',
       status: 'success',
+      data: transcriptions.map(t => t.toPrimitives()),
+      count: transcriptions.length,
       timestamp: new Date().toISOString(),
       requestId: event.requestContext.requestId
     })
   }
 }
 
-export const userPostHandler = compose(
+export const transcriptionGetAllHandler = compose(
   withErrorHandling,
   withCorsHeaders({
-    methods: ['POST', 'OPTIONS'],
+    methods: ['GET', 'OPTIONS'],
     headers: ['Content-Type', 'Authorization']
-  }),
-  withBodyValidation
-)(userPostHandlerCore)
+  })
+)(transcriptionGetAllHandlerCore)
