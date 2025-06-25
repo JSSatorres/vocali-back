@@ -6,6 +6,7 @@ import { TranscriptionFileSize } from '../../../../../src/context/Transcription/
 import { TranscriptionS3Key } from '../../../../../src/context/Transcription/domain/TranscriptionS3Key'
 import { TranscriptionStatus } from '../../../../../src/context/Transcription/domain/TranscriptionStatus'
 import { TranscriptionText } from '../../../../../src/context/Transcription/domain/TranscriptionText'
+import { TrasncriptionUserId } from '../../../../../src/context/Transcription/domain/TrasncriptionUserId'
 import { TranscriptionIdMother } from './TranscriptionIdMother'
 import { TranscriptionFilenameMother } from './TranscriptionFilenameMother'
 import { TranscriptionDurationMother } from './TranscriptionDurationMother'
@@ -23,6 +24,7 @@ export const TranscriptionMother = {
     s3Key?: TranscriptionS3Key,
     status?: TranscriptionStatus,
     transcriptionText?: TranscriptionText,
+    trasncriptionUserId?: TrasncriptionUserId,
     createdAt?: Date
   ): Transcription {
     return new Transcription(
@@ -33,6 +35,7 @@ export const TranscriptionMother = {
       s3Key ?? TranscriptionS3KeyMother.create(),
       status ?? TranscriptionStatusMother.pending(),
       transcriptionText ?? TranscriptionTextMother.empty(),
+      trasncriptionUserId ?? new TrasncriptionUserId('default-user-123'),
       createdAt ?? new Date()
     )
   },
@@ -50,6 +53,7 @@ export const TranscriptionMother = {
       TranscriptionS3KeyMother.valid(),
       TranscriptionStatusMother.pending(),
       TranscriptionTextMother.empty(),
+      new TrasncriptionUserId('valid-user-123'),
       new Date('2024-01-01T00:00:00.000Z')
     )
   },

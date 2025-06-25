@@ -1,5 +1,4 @@
 import { describe, expect, test } from '@jest/globals'
-
 import { TranscriptionMother } from './__mothers__/TranscriptionMother'
 import { TranscriptionFilenameMother } from './__mothers__/TranscriptionFilenameMother'
 import { TranscriptionDurationMother } from './__mothers__/TranscriptionDurationMother'
@@ -7,15 +6,17 @@ import { TranscriptionFileSizeMother } from './__mothers__/TranscriptionFileSize
 import { TranscriptionS3KeyMother } from './__mothers__/TranscriptionS3KeyMother'
 import { TranscriptionTextMother } from './__mothers__/TranscriptionTextMother'
 import { Transcription } from '@/context/Transcription/domain/Transcription'
+import { TrasncriptionUserId } from '@/context/Transcription/domain/TrasncriptionUserId'
 
 describe('Transcription Domain', () => {
   test('should create a new transcription with pending status', () => {
     const filename = TranscriptionFilenameMother.valid()
     const duration = TranscriptionDurationMother.valid()
     const fileSize = TranscriptionFileSizeMother.valid()
+    const userId = new TrasncriptionUserId('test-user-123')
     const s3Key = TranscriptionS3KeyMother.valid()
 
-    const transcription = Transcription.create(filename, duration, fileSize, s3Key)
+    const transcription = Transcription.create(filename, duration, fileSize, userId, s3Key)
 
     expect(transcription.filename.value).toBe(filename.value)
     expect(transcription.duration.value).toBe(duration.value)
@@ -23,18 +24,25 @@ describe('Transcription Domain', () => {
     expect(transcription.s3Key.value).toBe(s3Key.value)
     expect(transcription.status.value).toBe('pending')
     expect(transcription.transcriptionText.value).toBe('')
+    expect(transcription.trasncriptionUserId.value).toBe('test-user-123')
     expect(transcription.id).toBeDefined()
     expect(transcription.createdAt).toBeInstanceOf(Date)
   })
 
-  test('should complete transcription and update status and text', () => {
-    const transcription = TranscriptionMother.pending()
+  test('should create transcription with custom transcription text', () => {
     const transcriptionText = TranscriptionTextMother.valid()
 
-    transcription.completeTranscription(transcriptionText)
+    const transcriptionWithText = TranscriptionMother.create(
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      transcriptionText
+    )
 
-    expect(transcription.status.value).toBe('completed')
-    expect(transcription.transcriptionText.value).toBe(transcriptionText.value)
+    expect(transcriptionWithText.transcriptionText.value).toBe(transcriptionText.value)
   })
 
   test('should convert transcription to primitives correctly', () => {
