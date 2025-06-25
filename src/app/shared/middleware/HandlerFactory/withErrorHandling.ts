@@ -1,6 +1,6 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
-
-export type LambdaHandler = (event: APIGatewayProxyEvent) => Promise<APIGatewayProxyResult>
+import { LambdaHandler } from '../createHandler'
+import { HttpError } from '../../errors/HttpError'
 
 export const withErrorHandling = (handler: LambdaHandler): LambdaHandler => {
   return async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
@@ -9,21 +9,14 @@ export const withErrorHandling = (handler: LambdaHandler): LambdaHandler => {
     } catch (error: unknown) {
       console.error('Error in lambda handler:', error)
 
-      if (error instanceof Error) {
-        if (
-          error.message.includes('Invalid') ||
-          error.message.includes('cannot') ||
-          error.message.includes('must') ||
-          error.message.includes('required')
-        ) {
-          return {
-            statusCode: 400,
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              error: 'Validation Error',
-              message: error.message
-            })
-          }
+      if (error instanceof HttpError) {
+        return {
+          statusCode: error.statusCode,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            error: error.name ?? 'HttpError',
+            message: error.message
+          })
         }
       }
 

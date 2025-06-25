@@ -6,6 +6,7 @@ import { TranscriptionFileSize } from './TranscriptionFileSize'
 import { TranscriptionStatus } from './TranscriptionStatus'
 import { TranscriptionText } from './TranscriptionText'
 import { TranscriptionS3Key } from './TranscriptionS3Key'
+import { TrasncriptionUserId } from './TrasncriptionUserId'
 
 export class Transcription extends AggregateRoot {
   readonly id: TranscriptionId
@@ -13,6 +14,7 @@ export class Transcription extends AggregateRoot {
   readonly duration: TranscriptionDuration
   readonly fileSize: TranscriptionFileSize
   readonly s3Key: TranscriptionS3Key
+  readonly trasncriptionUserId: TrasncriptionUserId
   readonly createdAt: Date
   private _status: TranscriptionStatus
   private _transcriptionText: TranscriptionText
@@ -25,6 +27,7 @@ export class Transcription extends AggregateRoot {
     s3Key: TranscriptionS3Key,
     status: TranscriptionStatus,
     transcriptionText: TranscriptionText,
+    trasncriptionUserId: TrasncriptionUserId,
     createdAt: Date
   ) {
     super()
@@ -34,6 +37,7 @@ export class Transcription extends AggregateRoot {
     this.fileSize = fileSize
     this.s3Key = s3Key
     this._status = status
+    this.trasncriptionUserId = trasncriptionUserId
     this._transcriptionText = transcriptionText
     this.createdAt = createdAt
   }
@@ -50,6 +54,7 @@ export class Transcription extends AggregateRoot {
     filename: TranscriptionFilename,
     duration: TranscriptionDuration,
     fileSize: TranscriptionFileSize,
+    trasncriptionUserId: TrasncriptionUserId,
     s3Key: TranscriptionS3Key
   ): Transcription {
     const transcription = new Transcription(
@@ -60,8 +65,18 @@ export class Transcription extends AggregateRoot {
       s3Key,
       TranscriptionStatus.pending(),
       new TranscriptionText(''),
+      trasncriptionUserId,
       new Date()
     )
+
+    // Registrar evento de dominio
+    // transcription.record(
+    //   new TranscriptionCreatedDomainEvent(
+    //     transcription.id,
+    //     transcription.s3Key,
+    //     transcription.filename
+    //   )
+    // )
 
     return transcription
   }
@@ -100,6 +115,7 @@ export class Transcription extends AggregateRoot {
     s3Key: string
     status: string
     transcriptionText: string
+    trasncriptionUserId: string
     createdAt: string
   }): Transcription {
     return new Transcription(
@@ -110,6 +126,7 @@ export class Transcription extends AggregateRoot {
       new TranscriptionS3Key(plainData.s3Key),
       new TranscriptionStatus(plainData.status),
       new TranscriptionText(plainData.transcriptionText),
+      new TrasncriptionUserId(plainData.trasncriptionUserId),
       new Date(plainData.createdAt)
     )
   }

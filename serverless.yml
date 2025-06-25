@@ -5,6 +5,11 @@ provider:
   runtime: nodejs20.x
   region: eu-west-1
   stage: ${self:custom.stage}
+  logRetentionInDays: 14
+  logs:
+    httpApi: true
+
+
   httpApi:
     cors:
       allowCredentials: false
@@ -24,6 +29,21 @@ provider:
         - DELETE
         - OPTIONS
       maxAge: 86400
+    # logs:
+    #   # Nivel de log, puede ser INFO o DEBUG
+    #   # Para HTTP API, 'level' controla principalmente si se envían los logs.
+    #   # La verbosidad de lo que se loguea se controla con 'format'.
+    #   level: INFO
+    #   # El 'format' es crucial para capturar detalles del error de integración.
+    #   # Aquí incluimos $context.integrationErrorMessage que te dirá por qué la Lambda no se invocó.
+    #   format: '{"requestId":"$context.requestId","ip":"$context.identity.sourceIp","requestTime":"$context.requestTime","httpMethod":"$context.httpMethod","path":"$context.path","status":"$context.status","error":"$context.integrationErrorMessage","integrationStatus":"$context.integrationStatus","protocol":"$context.protocol","responseLength":"$context.responseLength"}'
+    authorizers:
+      jwtAuthorizer:
+        identitySource: $request.header.Authorization
+        issuerUrl: https://cognito-idp.${env:COGNITO_REGION}.amazonaws.com/${env:COGNITO_USER_POOL_ID}
+        audience:
+        - ${env:COGNITO_CLIENT_ID}
+
   iamRoleStatements:
     - Effect: Allow
       Action:
@@ -45,6 +65,10 @@ provider:
         - arn:aws:s3:::${self:custom.bucketName}
         - arn:aws:s3:::${self:custom.bucketName}/*
 
+
+plugins:
+  - serverless-offline
+
 custom:
   stage: ${opt:stage, 'dev'}
   region: ${opt:region, 'eu-west-1'}
@@ -62,34 +86,31 @@ build:
     exclude:
       - aws-sdk
     external:
-      - "@aws-sdk/*"
+      - '@aws-sdk/*'
     inject:
-      - "./node_modules/reflect-metadata/Reflect.js"
+      - './node_modules/reflect-metadata/Reflect.js'
 
 functions:
-  postUser:
-    handler: src/app/lambdaHandler/user/userPostHandler.userPostHandler
-    environment:
-      USER_TABLE_NAME: ${self:custom.userTableName}
-    events:
-      - httpApi:
-          path: /users
-          method: post
-
   postTranscription:
-    handler: src/app/lambdaHandler/Transcription/transcriptionPostHandlerSimple.transcriptionPostHandler
+    handler: src/app/lambdaHandler/Transcription/transcriptionPostHandler.transcriptionPostHandler
+    timeout: 300
+    memorySize: 128
     environment:
       TRANSCRIPTION_TABLE_NAME: ${self:custom.transcriptionTableName}
       S3_BUCKET_NAME: ${self:custom.bucketName}
+      SPEECHMATICS_API_KEY: ${env:SPEECHMATICS_API_KEY}
     events:
       - httpApi:
           path: /transcriptions
           method: post
+          authorizer:
+            name: jwtAuthorizer
 
   getTranscriptions:
     handler: src/app/lambdaHandler/Transcription/transcriptionGetAllHandler.transcriptionGetAllHandler
     environment:
       TRANSCRIPTION_TABLE_NAME: ${self:custom.transcriptionTableName}
+      SPEECHMATICS_API_KEY: ${env:SPEECHMATICS_API_KEY}
     events:
       - httpApi:
           path: /transcriptions
@@ -99,6 +120,7 @@ functions:
     handler: src/app/lambdaHandler/Transcription/transcriptionGetByIdHandler.transcriptionGetByIdHandler
     environment:
       TRANSCRIPTION_TABLE_NAME: ${self:custom.transcriptionTableName}
+      SPEECHMATICS_API_KEY: ${env:SPEECHMATICS_API_KEY}
     events:
       - httpApi:
           path: /transcriptions/{id}

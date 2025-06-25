@@ -12,7 +12,6 @@ export class TranscriptionS3Key extends StringValueObject {
       throw new InvalidArgumentError('S3 key cannot be empty')
     }
 
-    // S3 key validation - basic rules
     if (value.includes('//') || value.startsWith('/')) {
       throw new InvalidArgumentError('S3 key cannot start with / or contain //')
     }

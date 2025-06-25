@@ -9,19 +9,22 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "declaration": false,
-    "outDir": ".build", // o "dist" si prefieres
-    "rootDir": "./",    // o "src" si prefieres
+    "outDir": ".build", 
+    "rootDir": "./",   
     "sourceMap": true,
     "removeComments": true,
     "lib": ["es2020"],
     "types": ["node", "reflect-metadata"],
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    "baseUrl": ".", // <-- Añade esto
-    "paths": {      // <-- Y esto
+    "baseUrl": ".", 
+    "paths": {    
       "@/*": ["src/*"]
     }
   },
+  "sideEffects": [
+    "**/context/Shared/infrastructure/DI/DIContainer.ts"
+  ],
   "include": ["src/**/*.ts", "tests/**/*.ts"],
   "exclude": ["node_modules", ".build", ".serverless"]
 }

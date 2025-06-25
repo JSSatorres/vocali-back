@@ -1,5 +1,7 @@
+import { APIGatewayProxyEvent } from 'aws-lambda'
+
 export interface FileParserService {
-  parseMultipart: (body: string, contentType: string) => Promise<{
+  parseFromEvent: (event: APIGatewayProxyEvent) => Promise<{
     filename: string
     fileContent: Buffer
     mimeType: string

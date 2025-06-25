@@ -1,8 +1,9 @@
 import { injectable } from 'tsyringe'
-import { DynamoDBDocumentClient, PutCommand, GetCommand, ScanCommand, UpdateCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb'
+import { DynamoDBDocumentClient, PutCommand, GetCommand, ScanCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb'
 import { Transcription } from '../../domain/Transcription'
 import { TranscriptionRepository } from '../../domain/TranscriptionRepository'
 import { createDynamoDBClient } from '../../../Shared/infrastructure/persistence/dynamodb/DynamoDBConfig'
+import { TranscriptionId } from '../../domain/TranscriptionId'
 
 @injectable()
 export class DynamoDBTranscriptionRepository implements TranscriptionRepository {
@@ -21,9 +22,10 @@ export class DynamoDBTranscriptionRepository implements TranscriptionRepository 
       duration: transcription.duration.value,
       fileSize: transcription.fileSize.value,
       s3Key: transcription.s3Key.value,
-      status: transcription.status.value,
-      transcriptionText: transcription.transcriptionText.value,
-      createdAt: transcription.createdAt.toISOString(),
+      trasncriptionUserId: transcription.trasncriptionUserId.value,
+      // status: transcription.status.value,
+      // transcriptionText: transcription.transcriptionText.value,
+      // createdAt: transcription.createdAt.toISOString(),
       updatedAt: new Date().toISOString()
     }
 
@@ -55,8 +57,13 @@ export class DynamoDBTranscriptionRepository implements TranscriptionRepository 
       s3Key: result.Item.s3Key,
       status: result.Item.status,
       transcriptionText: result.Item.transcriptionText,
-      createdAt: result.Item.createdAt
+      createdAt: result.Item.createdAt,
+      trasncriptionUserId: result.Item.trasncriptionUserId
     })
+  }
+
+  async findById (id: TranscriptionId): Promise<Transcription | null> {
+    return await this.search(id.value)
   }
 
   async searchAll (): Promise<Transcription[]> {
@@ -78,56 +85,9 @@ export class DynamoDBTranscriptionRepository implements TranscriptionRepository 
       s3Key: item.s3Key,
       status: item.status,
       transcriptionText: item.transcriptionText,
-      createdAt: item.createdAt
+      createdAt: item.createdAt,
+      trasncriptionUserId: item.trasncriptionUserId
     }))
-  }
-
-  async searchByStatus (status: string): Promise<Transcription[]> {
-    const command = new ScanCommand({
-      TableName: this.tableName,
-      FilterExpression: '#status = :status',
-      ExpressionAttributeNames: {
-        '#status': 'status'
-      },
-      ExpressionAttributeValues: {
-        ':status': status
-      }
-    })
-
-    const result = await this.client.send(command)
-
-    if (result.Items === undefined) {
-      return []
-    }
-
-    return result.Items.map(item => Transcription.fromPrimitives({
-      id: item.transcriptionId,
-      filename: item.filename,
-      duration: item.duration,
-      fileSize: item.fileSize,
-      s3Key: item.s3Key,
-      status: item.status,
-      transcriptionText: item.transcriptionText,
-      createdAt: item.createdAt
-    }))
-  }
-
-  async update (transcription: Transcription): Promise<void> {
-    const command = new UpdateCommand({
-      TableName: this.tableName,
-      Key: { transcriptionId: transcription.id.value },
-      UpdateExpression: 'SET #status = :status, transcriptionText = :transcriptionText, updatedAt = :updatedAt',
-      ExpressionAttributeNames: {
-        '#status': 'status'
-      },
-      ExpressionAttributeValues: {
-        ':status': transcription.status.value,
-        ':transcriptionText': transcription.transcriptionText.value,
-        ':updatedAt': new Date().toISOString()
-      }
-    })
-
-    await this.client.send(command)
   }
 
   async delete (id: string): Promise<void> {

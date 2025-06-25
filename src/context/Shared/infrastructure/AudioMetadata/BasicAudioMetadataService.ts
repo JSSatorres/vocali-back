@@ -4,12 +4,9 @@ import { AudioMetadataService } from '../../domain/AudioMetadataService'
 @injectable()
 export class BasicAudioMetadataService implements AudioMetadataService {
   async extractMetadata (filename: string, fileContent: Buffer): Promise<{ duration: string, fileSize: string }> {
-    // Calculate file size
     const fileSizeInBytes = fileContent.length
     const fileSize = this.formatFileSize(fileSizeInBytes)
 
-    // For now, we'll use a simple duration estimation
-    // In a real implementation, you'd use a library like 'node-ffmpeg' or 'music-metadata'
     const duration = this.estimateDuration(fileSizeInBytes, filename)
 
     return {
@@ -30,19 +27,16 @@ export class BasicAudioMetadataService implements AudioMetadataService {
   }
 
   private estimateDuration (fileSizeInBytes: number, filename: string): string {
-    // Simple estimation based on file size and format
-    // This is a rough approximation - in production you'd use proper audio analysis
     const ext = filename.toLowerCase().split('.').pop()
 
-    let bitrate = 128 // default bitrate in kbps
+    let bitrate = 128
     switch (ext) {
       case 'mp3': bitrate = 128; break
-      case 'wav': bitrate = 1411; break // uncompressed
+      case 'wav': bitrate = 1411; break
       case 'm4a': bitrate = 128; break
       case 'mp4': bitrate = 128; break
     }
 
-    // Duration = (file size in bits) / (bitrate in bits per second)
     const fileSizeInBits = fileSizeInBytes * 8
     const bitrateInBitsPerSecond = bitrate * 1000
     const durationInSeconds = Math.floor(fileSizeInBits / bitrateInBitsPerSecond)

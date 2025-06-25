@@ -1,6 +1,6 @@
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
 
-export type LambdaHandler = (event: APIGatewayProxyEvent) => Promise<APIGatewayProxyResult>
+import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
+import { LambdaHandler } from '../createHandler'
 
 export const withBodyValidation = (handler: LambdaHandler): LambdaHandler => {
   return async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {

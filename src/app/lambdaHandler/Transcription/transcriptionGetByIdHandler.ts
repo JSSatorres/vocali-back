@@ -2,13 +2,9 @@ import '../../../context/Shared/infrastructure/bootstrap'
 import { container } from 'tsyringe'
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
 import { TranscriptionFinder } from '../../../context/Transcription/application/TranscriptionFinder'
-import { withErrorHandling } from '../../shared/middleware/errorHandlingMiddleware'
-import { withCorsHeaders } from '../../shared/middleware/corsMiddleware'
-import { compose } from '../../shared/middleware/compose'
-import { initializeDIContainer } from '../../../context/Shared/infrastructure/DI/DIContainer'
-
-// Initialize DI container once
-initializeDIContainer()
+import { withErrorHandling } from '../../shared/middleware/HandlerFactory/withErrorHandling'
+import { withCorsHeaders } from '../../shared/middleware/HandlerFactory/withCorsHeaders'
+import { compose } from '../../shared/middleware/HandlerFactory/compose'
 
 const transcriptionGetByIdHandlerCore = async (
   event: APIGatewayProxyEvent

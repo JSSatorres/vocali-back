@@ -1,6 +1,5 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
-
-export type LambdaHandler = (event: APIGatewayProxyEvent) => Promise<APIGatewayProxyResult>
+import { LambdaHandler } from '../createHandler'
 
 interface CorsOptions {
   origin?: string

@@ -14,7 +14,7 @@ export class S3FileUploadService implements FileUploadService {
 
   async upload (filename: string, fileContent: Buffer): Promise<string> {
     const timestamp = Date.now()
-    const s3Key = `uploads/${timestamp}-${filename}`
+    const s3Key = `${timestamp}-${filename}`
 
     const command = new PutObjectCommand({
       Bucket: this.bucketName,

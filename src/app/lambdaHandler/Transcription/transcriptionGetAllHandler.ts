@@ -1,21 +1,13 @@
-import '../../../context/Shared/infrastructure/bootstrap'
 import { container } from 'tsyringe'
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
 import { TranscriptionLister } from '../../../context/Transcription/application/TranscriptionLister'
-import { withErrorHandling } from '../../shared/middleware/errorHandlingMiddleware'
-import { withCorsHeaders } from '../../shared/middleware/corsMiddleware'
-import { compose } from '../../shared/middleware/compose'
-import { initializeDIContainer } from '../../../context/Shared/infrastructure/DI/DIContainer'
-
-// Initialize DI container once
-initializeDIContainer()
+import { createHandler } from '@/app/shared/middleware/createHandler'
 
 const transcriptionGetAllHandlerCore = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
   const status = event.queryStringParameters?.status
 
-  // Resolve TranscriptionLister from the DI container
   const transcriptionLister = container.resolve(TranscriptionLister)
 
   const transcriptions = status !== undefined
@@ -27,7 +19,7 @@ const transcriptionGetAllHandlerCore = async (
     body: JSON.stringify({
       message: 'Transcriptions retrieved successfully',
       status: 'success',
-      data: transcriptions.map(t => t.toPrimitives()),
+      data: transcriptions.map(transcription => transcription.toPrimitives()),
       count: transcriptions.length,
       timestamp: new Date().toISOString(),
       requestId: event.requestContext.requestId
@@ -35,10 +27,6 @@ const transcriptionGetAllHandlerCore = async (
   }
 }
 
-export const transcriptionGetAllHandler = compose(
-  withErrorHandling,
-  withCorsHeaders({
-    methods: ['GET', 'OPTIONS'],
-    headers: ['Content-Type', 'Authorization']
-  })
-)(transcriptionGetAllHandlerCore)
+export const transcriptionGetAllHandler = createHandler(transcriptionGetAllHandlerCore, {
+  methods: ['GET', 'OPTIONS']
+})
