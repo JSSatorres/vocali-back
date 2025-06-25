@@ -4,13 +4,72 @@ provider:
   name: aws
   runtime: nodejs20.x
   region: eu-west-1
+  stage: ${self:custom.stage}
+  logRetentionInDays: 14
+  logs:
+    httpApi: true
+
+
+  httpApi:
+    cors:
+      allowCredentials: false
+      allowedOrigins:
+        - "*"
+      allowedHeaders:
+        - Content-Type
+        - X-Amz-Date
+        - Authorization
+        - X-Api-Key
+        - X-Amz-Security-Token
+        - X-Amz-User-Agent
+      allowedMethods:
+        - GET
+        - POST
+        - PUT
+        - DELETE
+        - OPTIONS
+      maxAge: 86400
+
+    authorizers:
+      jwtAuthorizer:
+        identitySource: $request.header.Authorization
+        issuerUrl: https://cognito-idp.${env:COGNITO_REGION}.amazonaws.com/${env:COGNITO_USER_POOL_ID}
+        audience:
+        - ${env:COGNITO_CLIENT_ID}
+
   iamRoleStatements:
     - Effect: Allow
       Action:
         - dynamodb:PutItem
         - dynamodb:GetItem
-      Resource: arn:aws:dynamodb:eu-west-1:838736784815:table/UserTable
-      # Resource: arn:aws:dynamodb:${self:provider.region}:*:table/UserTable
+        - dynamodb:Scan
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+        - dynamodb:Query
+      Resource: 
+        - arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.transcriptionTableName}
+        - arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.transcriptionTableName}/index/*
+    - Effect: Allow
+      Action:
+        - s3:GetObject
+        - s3:PutObject
+        - s3:DeleteObject
+        - s3:ListBucket
+      Resource:
+        - arn:aws:s3:::${self:custom.bucketName}
+        - arn:aws:s3:::${self:custom.bucketName}/*
+
+
+plugins:
+  - serverless-offline
+
+custom:
+  stage: ${opt:stage, 'dev'}
+  region: ${opt:region, 'eu-west-1'}
+  accountId: ${aws:accountId}
+  bucketName: vocali-transcriptions-${self:custom.stage}-${self:custom.accountId}
+  userTableName: vocali-users-${self:custom.stage}
+  transcriptionTableName: vocali-transcriptions-${self:custom.stage}
 
 
 build:
@@ -21,27 +80,121 @@ build:
     exclude:
       - aws-sdk
     external:
-      - "@aws-sdk/*"
+      - '@aws-sdk/*'
+    inject:
+      - './node_modules/reflect-metadata/Reflect.js'
 
 functions:
-  postUser:
-    handler: src/app/lambdaHandler/user/userPostHandler.userPostHandler
+  postTranscription:
+    handler: src/app/lambdaHandler/Transcription/transcriptionPostHandler.transcriptionPostHandler
+    timeout: 300
+    memorySize: 128
     environment:
-      USER_TABLE_NAME: !Ref UserTable
+      TRANSCRIPTION_TABLE_NAME: ${self:custom.transcriptionTableName}
+      S3_BUCKET_NAME: ${self:custom.bucketName}
+      SPEECHMATICS_API_KEY: ${env:SPEECHMATICS_API_KEY}
     events:
       - httpApi:
-          path: /users
+          path: /transcriptions
           method: post
+          authorizer:
+            name: jwtAuthorizer
+
+  getTranscriptions:
+    handler: src/app/lambdaHandler/Transcription/transcriptionGetAllHandler.transcriptionGetAllHandler
+    environment:
+      TRANSCRIPTION_TABLE_NAME: ${self:custom.transcriptionTableName}
+      SPEECHMATICS_API_KEY: ${env:SPEECHMATICS_API_KEY}
+    events:
+      - httpApi:
+          path: /transcriptions
+          method: get
+          authorizer:
+            name: jwtAuthorizer
+
+  getTranscriptionById:
+    handler: src/app/lambdaHandler/Transcription/transcriptionGetByIdHandler.transcriptionGetByIdHandler
+    environment:
+      TRANSCRIPTION_TABLE_NAME: ${self:custom.transcriptionTableName}
+      SPEECHMATICS_API_KEY: ${env:SPEECHMATICS_API_KEY}
+    events:
+      - httpApi:
+          path: /transcriptions/{id}
+          method: get
+          authorizer:
+            name: jwtAuthorizer
+
+  deleteTranscription:
+    handler: src/app/lambdaHandler/Transcription/transcriptionDeleteHandler.transcriptionDeleteHandler
+    environment:
+      TRANSCRIPTION_TABLE_NAME: ${self:custom.transcriptionTableName}
+      S3_BUCKET_NAME: ${self:custom.bucketName}
+    events:
+      - httpApi:
+          path: /transcriptions/{id}
+          method: delete
+          authorizer:
+            name: jwtAuthorizer
+
+  downloadTranscription:
+    handler: src/app/lambdaHandler/Transcription/transcriptionDownloadHandler.transcriptionDownloadHandler
+    environment:
+      TRANSCRIPTION_TABLE_NAME: ${self:custom.transcriptionTableName}
+      S3_BUCKET_NAME: ${self:custom.bucketName}
+    events:
+      - httpApi:
+          path: /transcriptions/{id}/download
+          method: get
+          authorizer:
+            name: jwtAuthorizer
 resources:
-    Resources:
-      UserTable:
-        Type: AWS::DynamoDB::Table
-        Properties:
-          TableName: UserTable
-          AttributeDefinitions:
-            - AttributeName: userId
-              AttributeType: S
+  Resources:
+    UserTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:custom.userTableName}
+        AttributeDefinitions:
+          - AttributeName: userId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: userId
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
+
+    TranscriptionTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:custom.transcriptionTableName}
+        AttributeDefinitions:
+        - AttributeName: transcriptionId
+          AttributeType: S
+        - AttributeName: transcriptionUserId   # <--- Añade esto
+          AttributeType: S
+        KeySchema:
+          - AttributeName: transcriptionId
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
+        GlobalSecondaryIndexes:
+        - IndexName: TranscriptionUserIdIndex
           KeySchema:
-            - AttributeName: userId
+            - AttributeName: transcriptionUserId
               KeyType: HASH
-          BillingMode: PAY_PER_REQUEST
+          Projection:
+            ProjectionType: ALL
+    TranscriptionsBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:custom.bucketName}
+        CorsConfiguration:
+          CorsRules:
+            - AllowedOrigins:
+                - "*"
+              AllowedMethods:
+                - GET
+                - PUT
+                - POST
+                - DELETE
+                - HEAD
+              AllowedHeaders:
+                - "*"
+              MaxAge: 3000

@@ -17,5 +17,6 @@ module.exports = {
   ],
   ignorePatterns: ['.eslintrc.js', 'node_modules/', '.build/', '.serverless/'],
   rules: {
+    '@typescript-eslint/strict-boolean-expressions': 'off',
   }
 }
