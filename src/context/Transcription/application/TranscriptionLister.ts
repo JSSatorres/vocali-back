@@ -6,15 +6,7 @@ import { TranscriptionRepository } from '../domain/TranscriptionRepository'
 export class TranscriptionLister {
   constructor (@inject('TranscriptionRepository') private readonly repository: TranscriptionRepository) {}
 
-  async run (): Promise<Transcription[]> {
-    console.log('TranscriptionLister.run')
-
-    return await this.repository.searchAll()
-  }
-
-  async runByStatus (status: string): Promise<Transcription[]> {
-    console.log('TranscriptionLister.runByStatus', status)
-
-    return await this.repository.searchByStatus(status)
+  async run (transcriptionUserId: string): Promise<Transcription[]> {
+    return await this.repository.searchAll(transcriptionUserId)
   }
 }

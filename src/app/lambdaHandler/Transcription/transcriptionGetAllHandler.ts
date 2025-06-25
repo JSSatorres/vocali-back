@@ -1,18 +1,22 @@
+import { TranscriptionLister } from './../../../context/Transcription/application/TranscriptionLister'
 import { container } from 'tsyringe'
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda'
-import { TranscriptionLister } from '../../../context/Transcription/application/TranscriptionLister'
 import { createHandler } from '@/app/shared/middleware/createHandler'
 
 const transcriptionGetAllHandlerCore = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
-  const status = event.queryStringParameters?.status
+  const transcriptionUserId = event.requestContext.authorizer?.jwt?.claims?.sub
 
-  const transcriptionLister = container.resolve(TranscriptionLister)
+  if (!transcriptionUserId) {
+    return {
+      statusCode: 401,
+      body: JSON.stringify({ message: 'Unauthorized: User ID not found in token' })
+    }
+  }
 
-  const transcriptions = status !== undefined
-    ? await transcriptionLister.runByStatus(status)
-    : await transcriptionLister.run()
+  const transcriptionLister = container.resolve<TranscriptionLister>('TranscriptionLister')
+  const transcriptions = await transcriptionLister.run(transcriptionUserId)
 
   return {
     statusCode: 200,

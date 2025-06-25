@@ -1,5 +1,5 @@
 import { injectable } from 'tsyringe'
-import { DynamoDBDocumentClient, PutCommand, GetCommand, ScanCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb'
+import { DynamoDBDocumentClient, PutCommand, QueryCommand, DeleteCommand, GetCommand } from '@aws-sdk/lib-dynamodb'
 import { Transcription } from '../../domain/Transcription'
 import { TranscriptionRepository } from '../../domain/TranscriptionRepository'
 import { createDynamoDBClient } from '../../../Shared/infrastructure/persistence/dynamodb/DynamoDBConfig'
@@ -22,10 +22,10 @@ export class DynamoDBTranscriptionRepository implements TranscriptionRepository 
       duration: transcription.duration.value,
       fileSize: transcription.fileSize.value,
       s3Key: transcription.s3Key.value,
-      trasncriptionUserId: transcription.trasncriptionUserId.value,
-      // status: transcription.status.value,
-      // transcriptionText: transcription.transcriptionText.value,
-      // createdAt: transcription.createdAt.toISOString(),
+      transcriptionUserId: transcription.trasncriptionUserId.value,
+      status: transcription.status.value,
+      transcriptionText: transcription.transcriptionText.value,
+      createdAt: transcription.createdAt.toISOString(),
       updatedAt: new Date().toISOString()
     }
 
@@ -37,57 +37,62 @@ export class DynamoDBTranscriptionRepository implements TranscriptionRepository 
     await this.client.send(command)
   }
 
-  async search (id: string): Promise<Transcription | null> {
+  async download (id: TranscriptionId): Promise<Transcription | null> {
     const command = new GetCommand({
       TableName: this.tableName,
-      Key: { transcriptionId: id }
+      Key: { transcriptionId: id.value }
     })
 
     const result = await this.client.send(command)
 
-    if (result.Item === undefined) {
+    if (!result.Item) {
       return null
     }
 
+    const item = result.Item
+
     return Transcription.fromPrimitives({
-      id: result.Item.transcriptionId,
-      filename: result.Item.filename,
-      duration: result.Item.duration,
-      fileSize: result.Item.fileSize,
-      s3Key: result.Item.s3Key,
-      status: result.Item.status,
-      transcriptionText: result.Item.transcriptionText,
-      createdAt: result.Item.createdAt,
-      trasncriptionUserId: result.Item.trasncriptionUserId
-    })
-  }
-
-  async findById (id: TranscriptionId): Promise<Transcription | null> {
-    return await this.search(id.value)
-  }
-
-  async searchAll (): Promise<Transcription[]> {
-    const command = new ScanCommand({
-      TableName: this.tableName
-    })
-
-    const result = await this.client.send(command)
-
-    if (result.Items === undefined) {
-      return []
-    }
-
-    return result.Items.map(item => Transcription.fromPrimitives({
       id: item.transcriptionId,
       filename: item.filename,
       duration: item.duration,
       fileSize: item.fileSize,
       s3Key: item.s3Key,
-      status: item.status,
-      transcriptionText: item.transcriptionText,
-      createdAt: item.createdAt,
-      trasncriptionUserId: item.trasncriptionUserId
-    }))
+      status: item.status || 'pending',
+      transcriptionText: item.transcriptionText || '',
+      createdAt: item.createdAt || item.updatedAt || new Date().toISOString(),
+      trasncriptionUserId: item.transcriptionUserId
+    })
+  }
+
+  async searchAll (transcriptionUserId: string): Promise<Transcription[]> {
+    const command = new QueryCommand({
+      TableName: this.tableName,
+      IndexName: 'TranscriptionUserIdIndex',
+      KeyConditionExpression: 'transcriptionUserId = :userId',
+      ExpressionAttributeValues: {
+        ':userId': transcriptionUserId
+      }
+    })
+
+    const result = await this.client.send(command)
+
+    if (!result.Items || result.Items.length === 0) {
+      return []
+    }
+
+    return result.Items.map(item =>
+      Transcription.fromPrimitives({
+        id: item.transcriptionId,
+        filename: item.filename,
+        duration: item.duration,
+        fileSize: item.fileSize,
+        s3Key: item.s3Key,
+        status: 'completed',
+        transcriptionText: item.transcriptionText || '',
+        createdAt: item.createdAt || item.updatedAt || new Date().toISOString(),
+        trasncriptionUserId: item.transcriptionUserId
+      })
+    )
   }
 
   async delete (id: string): Promise<void> {

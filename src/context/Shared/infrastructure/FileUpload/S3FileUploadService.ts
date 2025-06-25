@@ -1,4 +1,5 @@
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
+import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3'
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { injectable } from 'tsyringe'
 import { FileUploadService } from '../../domain/FileUploadService'
 
@@ -27,6 +28,24 @@ export class S3FileUploadService implements FileUploadService {
     return s3Key
   }
 
+  async delete (s3Key: string): Promise<void> {
+    const command = new DeleteObjectCommand({
+      Bucket: this.bucketName,
+      Key: s3Key
+    })
+
+    await this.client.send(command)
+  }
+
+  async getDownloadUrl (s3Key: string, expiresIn: number = 3600): Promise<string> {
+    const command = new GetObjectCommand({
+      Bucket: this.bucketName,
+      Key: s3Key
+    })
+
+    return await getSignedUrl(this.client, command, { expiresIn })
+  }
+
   private getContentType (filename: string): string {
     const ext = filename.toLowerCase().split('.').pop()
     switch (ext) {
@@ -34,6 +53,7 @@ export class S3FileUploadService implements FileUploadService {
       case 'wav': return 'audio/wav'
       case 'm4a': return 'audio/mp4'
       case 'mp4': return 'video/mp4'
+      case 'txt': return 'text/plain; charset=utf-8'
       default: return 'application/octet-stream'
     }
   }

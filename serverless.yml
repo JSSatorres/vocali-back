@@ -29,14 +29,7 @@ provider:
         - DELETE
         - OPTIONS
       maxAge: 86400
-    # logs:
-    #   # Nivel de log, puede ser INFO o DEBUG
-    #   # Para HTTP API, 'level' controla principalmente si se envían los logs.
-    #   # La verbosidad de lo que se loguea se controla con 'format'.
-    #   level: INFO
-    #   # El 'format' es crucial para capturar detalles del error de integración.
-    #   # Aquí incluimos $context.integrationErrorMessage que te dirá por qué la Lambda no se invocó.
-    #   format: '{"requestId":"$context.requestId","ip":"$context.identity.sourceIp","requestTime":"$context.requestTime","httpMethod":"$context.httpMethod","path":"$context.path","status":"$context.status","error":"$context.integrationErrorMessage","integrationStatus":"$context.integrationStatus","protocol":"$context.protocol","responseLength":"$context.responseLength"}'
+
     authorizers:
       jwtAuthorizer:
         identitySource: $request.header.Authorization
@@ -52,9 +45,10 @@ provider:
         - dynamodb:Scan
         - dynamodb:UpdateItem
         - dynamodb:DeleteItem
+        - dynamodb:Query
       Resource: 
-        - arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.userTableName}
         - arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.transcriptionTableName}
+        - arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.transcriptionTableName}/index/*
     - Effect: Allow
       Action:
         - s3:GetObject
@@ -115,6 +109,8 @@ functions:
       - httpApi:
           path: /transcriptions
           method: get
+          authorizer:
+            name: jwtAuthorizer
 
   getTranscriptionById:
     handler: src/app/lambdaHandler/Transcription/transcriptionGetByIdHandler.transcriptionGetByIdHandler
@@ -125,6 +121,32 @@ functions:
       - httpApi:
           path: /transcriptions/{id}
           method: get
+          authorizer:
+            name: jwtAuthorizer
+
+  deleteTranscription:
+    handler: src/app/lambdaHandler/Transcription/transcriptionDeleteHandler.transcriptionDeleteHandler
+    environment:
+      TRANSCRIPTION_TABLE_NAME: ${self:custom.transcriptionTableName}
+      S3_BUCKET_NAME: ${self:custom.bucketName}
+    events:
+      - httpApi:
+          path: /transcriptions/{id}
+          method: delete
+          authorizer:
+            name: jwtAuthorizer
+
+  downloadTranscription:
+    handler: src/app/lambdaHandler/Transcription/transcriptionDownloadHandler.transcriptionDownloadHandler
+    environment:
+      TRANSCRIPTION_TABLE_NAME: ${self:custom.transcriptionTableName}
+      S3_BUCKET_NAME: ${self:custom.bucketName}
+    events:
+      - httpApi:
+          path: /transcriptions/{id}/download
+          method: get
+          authorizer:
+            name: jwtAuthorizer
 resources:
   Resources:
     UserTable:
@@ -144,13 +166,21 @@ resources:
       Properties:
         TableName: ${self:custom.transcriptionTableName}
         AttributeDefinitions:
-          - AttributeName: transcriptionId
-            AttributeType: S
+        - AttributeName: transcriptionId
+          AttributeType: S
+        - AttributeName: transcriptionUserId   # <--- Añade esto
+          AttributeType: S
         KeySchema:
           - AttributeName: transcriptionId
             KeyType: HASH
         BillingMode: PAY_PER_REQUEST
-
+        GlobalSecondaryIndexes:
+        - IndexName: TranscriptionUserIdIndex
+          KeySchema:
+            - AttributeName: transcriptionUserId
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
     TranscriptionsBucket:
       Type: AWS::S3::Bucket
       Properties:

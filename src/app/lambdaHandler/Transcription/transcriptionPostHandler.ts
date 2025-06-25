@@ -11,12 +11,13 @@ process.traceDeprecation = true
 const transcriptionPostHandlerCore = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResult> => {
-  console.log('[DEBUG] Claims:', JSON.stringify(event.requestContext, null, 2))
   const fileParserService = container.resolve<FileParserService>('FileParserService')
   const { filename, fileContent, mimeType } = await fileParserService.parseFromEvent(event)
 
   validateAudioMimeType(mimeType, event.requestContext.requestId)
+
   const trasncriptionUserId = event.requestContext.authorizer?.jwt?.claims?.sub
+
   const transcriptionCreator = container.resolve(TranscriptionCreator)
   const transcriptionId = await transcriptionCreator.run({
     filename,

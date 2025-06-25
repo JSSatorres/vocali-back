@@ -8,14 +8,12 @@ export class TranscriptionFileSize extends StringValueObject {
   }
 
   private ensureIsValid (value: string): void {
-    // Format: "12.5 MB", "1.2 GB", "500 KB"
     const fileSizeRegex = /^\d+(\.\d+)?\s+(KB|MB|GB)$/
 
     if (!fileSizeRegex.test(value)) {
       throw new InvalidArgumentError('File size must be in format "12.5 MB", "1.2 GB", etc.')
     }
 
-    // Check if file size exceeds 20MB
     const sizeInBytes = this.calculateBytes(value)
     const maxSizeInBytes = 20 * 1024 * 1024 // 20MB
 

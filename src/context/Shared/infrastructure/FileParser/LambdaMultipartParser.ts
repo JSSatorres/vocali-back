@@ -14,7 +14,7 @@ export class LambdaMultipartParser implements FileParserService {
       const parsed = await parser.parse(event)
       console.log('Resultado del parseo:', parsed)
       const file = parsed.files?.[0]
-      // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+
       if (!file) {
         throw new Error('No file provided')
       }

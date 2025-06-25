@@ -9,45 +9,18 @@ import { TranscriptionS3Key } from './TranscriptionS3Key'
 import { TrasncriptionUserId } from './TrasncriptionUserId'
 
 export class Transcription extends AggregateRoot {
-  readonly id: TranscriptionId
-  readonly filename: TranscriptionFilename
-  readonly duration: TranscriptionDuration
-  readonly fileSize: TranscriptionFileSize
-  readonly s3Key: TranscriptionS3Key
-  readonly trasncriptionUserId: TrasncriptionUserId
-  readonly createdAt: Date
-  private _status: TranscriptionStatus
-  private _transcriptionText: TranscriptionText
-
   constructor (
-    id: TranscriptionId,
-    filename: TranscriptionFilename,
-    duration: TranscriptionDuration,
-    fileSize: TranscriptionFileSize,
-    s3Key: TranscriptionS3Key,
-    status: TranscriptionStatus,
-    transcriptionText: TranscriptionText,
-    trasncriptionUserId: TrasncriptionUserId,
-    createdAt: Date
+    public readonly id: TranscriptionId,
+    public readonly filename: TranscriptionFilename,
+    public readonly duration: TranscriptionDuration,
+    public readonly fileSize: TranscriptionFileSize,
+    public readonly s3Key: TranscriptionS3Key,
+    public readonly status: TranscriptionStatus,
+    public readonly transcriptionText: TranscriptionText,
+    public readonly trasncriptionUserId: TrasncriptionUserId,
+    public readonly createdAt: Date
   ) {
     super()
-    this.id = id
-    this.filename = filename
-    this.duration = duration
-    this.fileSize = fileSize
-    this.s3Key = s3Key
-    this._status = status
-    this.trasncriptionUserId = trasncriptionUserId
-    this._transcriptionText = transcriptionText
-    this.createdAt = createdAt
-  }
-
-  get status (): TranscriptionStatus {
-    return this._status
-  }
-
-  get transcriptionText (): TranscriptionText {
-    return this._transcriptionText
   }
 
   static create (
@@ -55,7 +28,8 @@ export class Transcription extends AggregateRoot {
     duration: TranscriptionDuration,
     fileSize: TranscriptionFileSize,
     trasncriptionUserId: TrasncriptionUserId,
-    s3Key: TranscriptionS3Key
+    s3Key: TranscriptionS3Key,
+    transcriptionText: string = ''
   ): Transcription {
     const transcription = new Transcription(
       TranscriptionId.random(),
@@ -64,34 +38,12 @@ export class Transcription extends AggregateRoot {
       fileSize,
       s3Key,
       TranscriptionStatus.pending(),
-      new TranscriptionText(''),
+      new TranscriptionText(transcriptionText),
       trasncriptionUserId,
       new Date()
     )
 
-    // Registrar evento de dominio
-    // transcription.record(
-    //   new TranscriptionCreatedDomainEvent(
-    //     transcription.id,
-    //     transcription.s3Key,
-    //     transcription.filename
-    //   )
-    // )
-
     return transcription
-  }
-
-  startProcessing (): void {
-    this._status = TranscriptionStatus.processing()
-  }
-
-  completeTranscription (transcriptionText: TranscriptionText): void {
-    this._status = TranscriptionStatus.completed()
-    this._transcriptionText = transcriptionText
-  }
-
-  markAsFailed (): void {
-    this._status = TranscriptionStatus.failed()
   }
 
   toPrimitives (): any {
@@ -101,8 +53,8 @@ export class Transcription extends AggregateRoot {
       duration: this.duration.value,
       fileSize: this.fileSize.value,
       s3Key: this.s3Key.value,
-      status: this._status.value,
-      transcriptionText: this._transcriptionText.value,
+      status: this.status.value,
+      transcriptionText: this.transcriptionText.value,
       createdAt: this.createdAt.toISOString()
     }
   }

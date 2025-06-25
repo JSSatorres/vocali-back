@@ -9,7 +9,7 @@ export class SpeechmaticsService implements TranscriptionProcessorService {
 
   constructor () {
     const apiKey = process.env.SPEECHMATICS_API_KEY ?? ''
-    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+
     if (!apiKey) {
       throw new Error('SPEECHMATICS_API_KEY environment variable is required')
     }
@@ -48,7 +48,7 @@ export class SpeechmaticsService implements TranscriptionProcessorService {
     }
 
     if (
-      // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+
       response &&
       typeof response === 'object' &&
       Array.isArray((response as any).results)
