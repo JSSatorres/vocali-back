@@ -30,7 +30,6 @@ export const createHandler = (
     withAuth,
     withDependencies,
     withErrorHandling,
-    // withBodyValidation,
     ...extraMiddleware
   )(core)
 }

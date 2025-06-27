@@ -33,9 +33,6 @@ export class TranscriptionCreator {
       request.filename
     )
 
-    console.log('[DEBUG] Speechmatics returned text:', transcriptText)
-    console.log('[DEBUG] Text length:', transcriptText?.length)
-
     const textBuffer = Buffer.from(transcriptText, 'utf-8')
     const s3Key = await this.fileUploadService.upload(transcriptFilename, textBuffer)
 

@@ -6,7 +6,6 @@ import { FileParserService } from '../../../context/Shared/domain/FileParserServ
 import { createHandler } from '@/app/shared/middleware/createHandler'
 import { validateAudioMimeType } from '@/app/shared/utils/transcriptionUtils'
 process.traceDeprecation = true
-// import { validateAudioMimeType, validateMultipartFormData } from '@/app/shared/utils/transcriptionUtils'
 
 const transcriptionPostHandlerCore = async (
   event: APIGatewayProxyEvent

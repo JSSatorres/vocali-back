@@ -17,7 +17,6 @@ export class SpeechmaticsService implements TranscriptionProcessorService {
   }
 
   async transcribeRawAudio (fileContent: Buffer, filename: string): Promise<string> {
-    // Guardar el buffer temporalmente y abrirlo como Blob
     const fs = await import('fs/promises')
     const tmp = await import('os')
     const path = await import('path')
@@ -38,9 +37,6 @@ export class SpeechmaticsService implements TranscriptionProcessorService {
       'json-v2'
     )
 
-    console.log('[DEBUG] Speechmatics response:', response)
-
-    // Limpieza del archivo temporal
     await fs.unlink(tmpFile)
 
     if (typeof response === 'string') {
